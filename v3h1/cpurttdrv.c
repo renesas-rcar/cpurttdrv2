@@ -1,17 +1,14 @@
 /****************************************************************************/
 /*
- * FILE          : cpurttdrv.c
- * DESCRIPTION   : CPU Runtime Test driver for sample code
- * CREATED       : 2021.04.20
- * MODIFIED      : 2021.07.15
+ * FILE          : cpurtt_common.h
+ * DESCRIPTION   : CPU Runtime Test driver
+ * CREATED       : 2021.08.26
+ * MODIFIED      : -
  * AUTHOR        : Renesas Electronics Corporation
- * TARGET DEVICE : R-Car V3Hv2
+ * TARGET DEVICE : R-Car V3Hv1.1
  * TARGET OS     : BareMetal
  * HISTORY       : 
- *                 2021.05.31 
- *                            Modify so that ioctl arguments can be held correctly when multiple ioctls are executed.
- *                 2021.07.15 
- *                            Modify prefix of smoni api.
+ *                 2021.08.26 Create New File for SoC
  */
 /****************************************************************************/
 /*
@@ -60,7 +57,7 @@
 
 #undef IS_INTERRUPT
 
-#define DRIVER_VERSION "0.0.1"
+#define DRIVER_VERSION "0.1.0"
 
 /***********************************************************
  Macro definitions
@@ -1429,7 +1426,7 @@ static long CpurttDrv_ioctl( struct file* filp, unsigned int cmd, unsigned long 
     return ret;
 }
 
-struct file_operations s_CpurttDrv_fops = {
+static struct file_operations s_CpurttDrv_fops = {
     .open    = CpurttDrv_open,
     .release = CpurttDrv_close,
     .unlocked_ioctl = CpurttDrv_ioctl,
@@ -1444,11 +1441,16 @@ static int CpurttDrv_init(void)
     unsigned int cnt;
 
     /* register character device for cpurttdrv */
-    cpurtt_major = register_chrdev(cpurtt_major, UDF_CPURTT_DRIVER_NAME, &s_CpurttDrv_fops);
-    if (cpurtt_major < 0)
+    ret = register_chrdev(cpurtt_major, UDF_CPURTT_DRIVER_NAME, &s_CpurttDrv_fops);
+    if (ret < 0)
     {
         pr_err( "register_chrdev = %d\n", cpurtt_major);
         return -EFAULT;
+    }
+    else
+    {
+        cpurtt_major = (unsigned int)ret;
+        ret = 0;
     }
 
     /* create class module */
@@ -1489,7 +1491,7 @@ static int CpurttDrv_init(void)
     init_waitqueue_head(&A2SyncWaitQue);
     sema_init(&CallbackSem, 0);
 
-    for(cnt=0;cnt<4;cnt++)
+    for(cnt=0;cnt<DRV_CPURTTKER_CPUNUM_MAX;cnt++)
     {
         g_A2Task[cnt] = NULL;
     }
@@ -1505,7 +1507,7 @@ static void CpurttDrv_exit(void)
     /* release cpurtt thread for A2 Runtime Test*/
     g_TaskExitFlg = 1;
     complete_all(&g_A2StartSynCompletion);
-    for(cnt=0;cnt<4;cnt++)
+    for(cnt=0;cnt<DRV_CPURTTKER_CPUNUM_MAX;cnt++)
     {
         if(g_A2Task[cnt]!=NULL)
         {

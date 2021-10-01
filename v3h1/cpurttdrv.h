@@ -1,14 +1,15 @@
 /****************************************************************************/
 /*
- * FILE          : cpurtt_common.h
+ * FILE          : cpurttdrv.h
  * DESCRIPTION   : CPU Runtime Test driver
  * CREATED       : 2021.08.26
- * MODIFIED      : -
+ * MODIFIED      : 2021.09.30
  * AUTHOR        : Renesas Electronics Corporation
  * TARGET DEVICE : R-Car V3Hv1.1
  * TARGET OS     : BareMetal
  * HISTORY       : 
  *                 2021.08.26 Create New File for SoC
+ *                 2021.09.30 Added support for the IMS3 hierarchy.
  */
 /****************************************************************************/
 /*
@@ -43,6 +44,7 @@
 #define DRV_RTTKER_IMS0_RTTEX  0xFFF90000U
 #define DRV_RTTKER_IMS1_RTTEX  0xFFF91000U
 #define DRV_RTTKER_IMS2_RTTEX  0xFFF92000U
+#define DRV_RTTKER_IMS3_RTTEX  0xFFF93000U
 #define DRV_RTTKER_IMP0_RTTEX  0xFF8D0000U
 #define DRV_RTTKER_IMP1_RTTEX  0xFFF50000U
 #define DRV_RTTKER_IMP2_RTTEX  0xFFF60000U
@@ -75,6 +77,7 @@
 #define DRV_RTTKER_IMS0_RTTFINISH1_BIT  4U
 #define DRV_RTTKER_IMS1_RTTFINISH1_BIT  5U
 #define DRV_RTTKER_IMS2_RTTFINISH1_BIT  6U
+#define DRV_RTTKER_IMS3_RTTFINISH1_BIT  7U
 #define DRV_RTTKER_CA53D_RTTFINISH1_BIT 23U
 #define DRV_RTTKER_CA530_RTTFINISH1_BIT 24U
 #define DRV_RTTKER_CA531_RTTFINISH1_BIT 25U
@@ -146,7 +149,8 @@ typedef union
         uint32_t IMS0 :1;
         uint32_t IMS1 :1;
         uint32_t IMS2 :1;
-        uint32_t Reserved2 :16;
+        uint32_t IMS3 :1;
+        uint32_t Reserved2 :15;
         uint32_t CA53D :1;
         uint32_t CA530 :1;
         uint32_t CA531 :1;
@@ -217,6 +221,7 @@ typedef enum
     DRV_RTTKER_HIERARCHY_IMS0, /* IMR-LX4(ch0) */
     DRV_RTTKER_HIERARCHY_IMS1, /* IMR-LX4(ch1) */
     DRV_RTTKER_HIERARCHY_IMS2, /* IMR-LX4(ch2) */
+    DRV_RTTKER_HIERARCHY_IMS3, /* IMR-LX4(ch3) */
     DRV_RTTKER_HIERARCHY_IMP0, /* Image Recognition Hierarchy (IMP core0) */
     DRV_RTTKER_HIERARCHY_IMP1, /* Image Recognition Hierarchy (IMP core1) */
     DRV_RTTKER_HIERARCHY_IMP2, /* Image Recognition Hierarchy (IMP core2) */

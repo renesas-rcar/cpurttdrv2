@@ -1,14 +1,15 @@
 /****************************************************************************/
 /*
- * FILE          : cpurtt_common.h
+ * FILE          : cpurttdrv.c
  * DESCRIPTION   : CPU Runtime Test driver
  * CREATED       : 2021.08.26
- * MODIFIED      : -
+ * MODIFIED      : 2021.09.30
  * AUTHOR        : Renesas Electronics Corporation
  * TARGET DEVICE : R-Car V3Hv1.1
  * TARGET OS     : BareMetal
  * HISTORY       : 
  *                 2021.08.26 Create New File for SoC
+ *                 2021.09.30 Added support for the IMS3 hierarchy.
  */
 /****************************************************************************/
 /*
@@ -57,7 +58,7 @@
 
 #undef IS_INTERRUPT
 
-#define DRIVER_VERSION "0.1.0"
+#define DRIVER_VERSION "0.2.0"
 
 /***********************************************************
  Macro definitions
@@ -114,6 +115,7 @@ static void __iomem *g_RegBaseAddrTable[DRV_RTTKER_HIERARCHY_MAX] = {
     NULL, /* IMR-LX4(ch0) */
     NULL, /* IMR-LX4(ch1) */
     NULL, /* IMR-LX4(ch2) */
+    NULL, /* IMR-LX4(ch3) */
     NULL, /* Image Recognition Hierarchy (IMP core0) */
     NULL, /* Image Recognition Hierarchy (IMP core1) */
     NULL, /* Image Recognition Hierarchy (IMP core2) */
@@ -145,6 +147,7 @@ static const phys_addr_t drvRTT_PhyRegAddr[DRV_RTTKER_HIERARCHY_MAX] = {
     DRV_RTTKER_IMS0_RTTEX,
     DRV_RTTKER_IMS1_RTTEX,
     DRV_RTTKER_IMS2_RTTEX,
+    DRV_RTTKER_IMS3_RTTEX,
     DRV_RTTKER_IMP0_RTTEX,
     DRV_RTTKER_IMP1_RTTEX,
     DRV_RTTKER_IMP2_RTTEX,
@@ -249,6 +252,7 @@ static void FbistInterruptHandler(int irq, struct uio_info *uio_info)
         {DRV_RTTKER_HIERARCHY_OTHER,	DRV_RTTKER_HIERARCHY_IMS0,	DRV_RTTKER_IMS0_RTTFINISH1_BIT,	DRV_RTTKER_IMS0_RTTEX},
         {DRV_RTTKER_HIERARCHY_OTHER,	DRV_RTTKER_HIERARCHY_IMS1,	DRV_RTTKER_IMS1_RTTFINISH1_BIT,	DRV_RTTKER_IMS1_RTTEX},
         {DRV_RTTKER_HIERARCHY_OTHER,	DRV_RTTKER_HIERARCHY_IMS2,	DRV_RTTKER_IMS2_RTTFINISH1_BIT,	DRV_RTTKER_IMS2_RTTEX},
+        {DRV_RTTKER_HIERARCHY_OTHER,	DRV_RTTKER_HIERARCHY_IMS3,	DRV_RTTKER_IMS3_RTTFINISH1_BIT,	DRV_RTTKER_IMS3_RTTEX},
         {DRV_RTTKER_HIERARCHY_CPU,	    DRV_RTTKER_HIERARCHY_53D,	DRV_RTTKER_CA53D_RTTFINISH1_BIT,	DRV_RTTKER_53D_RTTEX},
         {DRV_RTTKER_HIERARCHY_CPU,	    DRV_RTTKER_HIERARCHY_530,	DRV_RTTKER_CA530_RTTFINISH1_BIT,	DRV_RTTKER_530_RTTEX},
         {DRV_RTTKER_HIERARCHY_CPU,	    DRV_RTTKER_HIERARCHY_531,	DRV_RTTKER_CA531_RTTFINISH1_BIT,	DRV_RTTKER_531_RTTEX},

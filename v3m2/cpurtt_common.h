@@ -3,12 +3,13 @@
  * FILE          : cpurtt_common.h
  * DESCRIPTION   : CPU Runtime Test driver
  * CREATED       : 2021.08.26
- * MODIFIED      : -
+ * MODIFIED      : 2021.10.19
  * AUTHOR        : Renesas Electronics Corporation
  * TARGET DEVICE : R-Car V3Mv2
  * TARGET OS     : BareMetal
- * HISTORY       : 
+ * HISTORY       :
  *                 2021.08.26 Create New File for SoC
+ *                 2021.10.19 Delete unused definition value.
  */
 /****************************************************************************/
 /*
@@ -70,11 +71,6 @@ typedef struct {
     uint32_t MicroSec;
 } drvCPURTT_SetTimeoutParam_t;
 
-typedef struct {
-    uint32_t Rttex;
-    uint32_t TargetHierarchy;
-} drvCPURTT_SelfCheckParam_t;
-
 /* index for smoni api */
 typedef enum
 {
@@ -114,7 +110,6 @@ typedef struct {
 /* Definition for callback control information */
 #define DRV_CPURTT_CB_REQ_NON           (0x00000000U)
 #define DRV_CPURTT_CB_REQ_CALLBACK      (0x00000001U)
-#define DRV_CPURTT_CB_REQ_SETOUTPUT     (0x00000001U)
 
 #ifdef __cplusplus
 }

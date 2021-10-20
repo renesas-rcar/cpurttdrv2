@@ -3,12 +3,13 @@
  * FILE          : cpurttdrv.h
  * DESCRIPTION   : CPU Runtime Test driver for sample code
  * CREATED       : 2021.08.26
- * MODIFIED      : -
+ * MODIFIED      : 2021.10.19
  * AUTHOR        : Renesas Electronics Corporation
  * TARGET DEVICE : R-Car V3Mv2
  * TARGET OS     : BareMetal
- * HISTORY       : 
+ * HISTORY       :
  *                 2021.08.26 Create New File for SoC
+ *                 2021.10.19 Modify the definition value used in A2 Runtime Test.
  */
 /****************************************************************************/
 /*
@@ -93,6 +94,10 @@
 #define CB_QUEUE_STATUS_EMPTY   0x00
 #define CB_QUEUE_STATUS_ENA     0x01
 #define CB_QUEUE_STATUS_FULL    0x02
+
+/* Data definition value to be set in the argument of R_SMONI_API_RuntimeTestA2Execute other than CPU0 */
+#define DRV_RTTKER_A2_PARAM_SGI_DATA    0xFFFFFFFFU
+#define DRV_RTTKER_A2_PARAM_RTTEX_DATA  0x00000000U
 
 /* Structure of RTTFINISH1 */
 typedef union

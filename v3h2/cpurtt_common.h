@@ -3,7 +3,7 @@
  * FILE          : cpurtt_common.h
  * DESCRIPTION   : CPU Runtime Test driver
  * CREATED       : 2021.02.15
- * MODIFIED      : 2021.04.15
+ * MODIFIED      : 2021.10.19
  * AUTHOR        : Renesas Electronics Corporation
  * TARGET DEVICE : R-Car V3Hv2
  * TARGET OS     : BareMetal
@@ -11,6 +11,7 @@
  *                 2021.02.15 Create New File corresponding to BareMetal
  *                 2021.03.12 Fix for beta2 release
  *                 2021.04.15 Fix for beta3 release
+ *                 2021.10.19 Delete unused definition value.
  */
 /****************************************************************************/
 /*
@@ -117,7 +118,6 @@ typedef struct {
 /* Definition for callback control information */
 #define DRV_CPURTT_CB_REQ_NON           (0x00000000U)
 #define DRV_CPURTT_CB_REQ_CALLBACK      (0x00000001U)
-#define DRV_CPURTT_CB_REQ_SETOUTPUT     (0x00000001U)
 
 #ifdef __cplusplus
 }

@@ -3,12 +3,14 @@
  * FILE          : cpurttdrv.c
  * DESCRIPTION   : CPU Runtime Test driver for sample code
  * CREATED       : 2021.08.26
- * MODIFIED      : -
+ * MODIFIED      : 2021.10.19
  * AUTHOR        : Renesas Electronics Corporation
  * TARGET DEVICE : R-Car V3Mv2
  * TARGET OS     : BareMetal
  * HISTORY       : 
  *                 2021.08.26 Create New File for SoC
+ *                 2021.10.19 Modify the storage method of fail information in FbistInterruptHandler.
+ *                            Modify the execution method of A2 Runtime Test.
  */
 /****************************************************************************/
 /*
@@ -57,7 +59,7 @@
 
 #undef IS_INTERRUPT
 
-#define DRIVER_VERSION "0.1.0"
+#define DRIVER_VERSION "0.2.0"
 
 /***********************************************************
  Macro definitions
@@ -91,16 +93,6 @@ static drvCPURTT_A2rttParam_t g_A2Param[DRV_CPURTTKER_CPUNUM_MAX];
 
 static struct task_struct *g_A2Task[DRV_CPURTTKER_CPUNUM_MAX];
 static uint32_t g_TaskExitFlg = 0;
-
-static wait_queue_head_t A2SyncWaitQue;
-volatile static uint16_t g_A2SyncWait = 0;
-static struct semaphore A2SyncSem;
-
-static const uint16_t A2SyncInfoTable[DRV_CPURTTKER_CPUNUM_MAX] = 
-{
-    A2SYNC_CPU0_BIT,
-    A2SYNC_CPU1_BIT
-};
 
 static void __iomem *g_RegBaseSgir = NULL;
 static void __iomem *g_RegBaseItargets11 = NULL;
@@ -248,7 +240,7 @@ static void FbistInterruptHandler(int irq, struct uio_info *uio_info)
                 else if (SMONI_FUSA_ERROR_EXCLUSIVE == Smoniret)
                 {
                    /* If an exclusize error occurs in the Smoni API, set the output terminal output request information to the user layer  */
-                    RfsoOutputRes = DRV_CPURTT_CB_REQ_SETOUTPUT;
+                    RfsoOutputRes |= (uint32_t)1U << FbisthdrInfo[i].mHierarchy;
                 }
                 else
                 {
@@ -282,7 +274,7 @@ static void FbistInterruptHandler(int irq, struct uio_info *uio_info)
                 else
                 {
                    /* If an exclusize error occurs in the Smoni API, set the output terminal output request information to the user layer  */
-                    RfsoOutputRes = DRV_CPURTT_CB_REQ_SETOUTPUT;
+                    RfsoOutputRes |= (uint32_t)1U << FbisthdrInfo[i].mHierarchy;
                 }
             }
         }
@@ -710,113 +702,9 @@ static int drvCPURTT_UDF_A2RuntimeThred1(void *aArg)
 
         if (!g_TaskExitFlg)
         {
-            /* On CPU1, interrupt mask and execute A2 Runtime Test  */
-            g_A2SmoniResult[CpuNum] = R_SMONI_API_RuntimeTestA2Execute(g_A2Param[CpuNum].Rttex, g_A2Param[CpuNum].Sgi);
-
-           /* Notify that A2RuntimeTest is complete  */
-            complete(&g_A2EndSynCompletion[CpuNum]);
-        }
-        else
-        {
-            /* Exit if there is a thread termination request */
-            complete_and_exit(&g_A2EndSynCompletion[CpuNum], Ret);
-        }
-
-    }while(1);
-
-    return 0;
-}
-
-static int drvCPURTT_UDF_A2RuntimeThred2(void *aArg)
-{
-    uint16_t CpuNum;
-    long Ret = 0;
-    cpumask_t CpuMask;
-
-    CpuNum = 2;
-
-    cpumask_clear(&CpuMask);
-    cpumask_set_cpu(CpuNum, &CpuMask);
-    Ret = sched_setaffinity(current->pid, &CpuMask);
-
-    if(Ret < 0)
-    {
-        pr_err("KCPUTHREAD[%d] sched_setaffinity fail %ld\n", CpuNum, Ret);
-        complete_and_exit(&g_A2EndSynCompletion[CpuNum], Ret);
-    }
-
-    g_A2Task[CpuNum]->rt_priority = 1; /* max priority */
-    g_A2Task[CpuNum]->policy = SCHED_RR; /* max policy */
-
-    /* Notify the generator that the thread has started */
-    complete(&g_A2ThWakeupCompletion[CpuNum]);
-    do
-    {
-        /* Waiting for start request from user  */
-        Ret = wait_for_completion_interruptible(&g_A2StartSynCompletion);
-        if (0 != Ret)
-        {
-            pr_err(" CPU%d kthread wait completion error = %ld\n",CpuNum, Ret);
-            g_TaskExitFlg = true;
-        }
-
-        if (!g_TaskExitFlg)
-        {
-            /* On CPU2, interrupt mask and execute A2 Runtime Test  */
-            g_A2SmoniResult[CpuNum] = R_SMONI_API_RuntimeTestA2Execute(g_A2Param[CpuNum].Rttex, g_A2Param[CpuNum].Sgi);
-
-           /* Notify that A2RuntimeTest is complete  */
-            complete(&g_A2EndSynCompletion[CpuNum]);
-        }
-        else
-        {
-            /* Exit if there is a thread termination request */
-            complete_and_exit(&g_A2EndSynCompletion[CpuNum], Ret);
-        }
-
-    }while(1);
-
-    return 0;
-}
-
-static int drvCPURTT_UDF_A2RuntimeThred3(void *aArg)
-{
-    uint16_t CpuNum;
-    long Ret = 0;
-    cpumask_t CpuMask;
-
-    CpuNum = 3;
-
-    cpumask_clear(&CpuMask);
-    cpumask_set_cpu(CpuNum, &CpuMask);
-    Ret = sched_setaffinity(current->pid, &CpuMask);
-
-    if(Ret < 0)
-    {
-        pr_err("KCPUTHREAD[%d] sched_setaffinity fail %ld\n", CpuNum, Ret);
-        complete_and_exit(&g_A2EndSynCompletion[CpuNum], Ret);
-    }
-
-    g_A2Task[CpuNum]->rt_priority = 1; /* max priority */
-    g_A2Task[CpuNum]->policy = SCHED_RR; /* max policy */
-
-    /* Notify the generator that the thread has started */
-    complete(&g_A2ThWakeupCompletion[CpuNum]);
-
-    do
-    {
-        /* Waiting for start request from user  */
-        Ret = wait_for_completion_interruptible(&g_A2StartSynCompletion);
-        if (0 != Ret)
-        {
-            pr_err(" CPU%d kthread wait completion error = %ld\n",CpuNum, Ret);
-            g_TaskExitFlg = true;
-        }
-
-        if (!g_TaskExitFlg)
-        {
-            /* On CPU3, interrupt mask and execute A2 Runtime Test  */
-            g_A2SmoniResult[CpuNum] = R_SMONI_API_RuntimeTestA2Execute(g_A2Param[CpuNum].Rttex, g_A2Param[CpuNum].Sgi);
+            /* On CPU1, interrupt mask and execute A2 Runtime Test.  */
+            /* Dummy data is set in the argument except for CPU0.    */
+            g_A2SmoniResult[CpuNum] = R_SMONI_API_RuntimeTestA2Execute(DRV_RTTKER_A2_PARAM_RTTEX_DATA, DRV_RTTKER_A2_PARAM_SGI_DATA);
 
            /* Notify that A2RuntimeTest is complete  */
             complete(&g_A2EndSynCompletion[CpuNum]);
@@ -837,11 +725,9 @@ static long drvCPURTT_UDF_RuntimeTestInit(void)
 {
     long ret = 0;
     uint32_t CpuIndex;
-    const A2ThreadTable A2ThreadTable[4] = {
+    const A2ThreadTable A2ThreadTable[DRV_CPURTTKER_CPUNUM_MAX] = {
                                       drvCPURTT_UDF_A2RuntimeThred0,
-                                      drvCPURTT_UDF_A2RuntimeThred1,
-                                      drvCPURTT_UDF_A2RuntimeThred2,
-                                      drvCPURTT_UDF_A2RuntimeThred3};
+                                      drvCPURTT_UDF_A2RuntimeThred1};
     g_TaskExitFlg = 0;
       /* initalize for A2 RuntimeTest*/
     for(CpuIndex=0; CpuIndex<DRV_CPURTTKER_CPUNUM_MAX; CpuIndex++)
@@ -993,11 +879,11 @@ static long drvCPURTT_UDF_SmoniApiExe(drvCPURTT_SmoniTable_t index, uint32_t aCp
             ret = copy_from_user(&SmoniArgA2, (const void __user *)(aArg), sizeof(drvCPURTT_A2rttParam_t));
             if (ret == 0U)
             {
-                g_A2Param[aCpuId].Rttex = SmoniArgA2.Rttex;
-                g_A2Param[aCpuId].Sgi = SmoniArgA2.Sgi;
-
                 if (aCpuId == 0)
                 {
+                    g_A2Param[aCpuId].Rttex = SmoniArgA2.Rttex;
+                    g_A2Param[aCpuId].Sgi = SmoniArgA2.Sgi;
+
                     ret = (long)irq_set_affinity_hint(IrqNum, cpumask_of(0U));
                     if (ret != 0)
                     {
@@ -1015,62 +901,26 @@ static long drvCPURTT_UDF_SmoniApiExe(drvCPURTT_SmoniTable_t index, uint32_t aCp
                          break;
                      }
 
-                    /* Set a flag for synchronization with other CPUs */
-                    ret = down_interruptible(&A2SyncSem);
-                    if(ret != 0)
-                    {
-                        pr_err(" CPU%d A2SyncSem error = %ld\n",aCpuId, ret);
-                        break;
-                    }
-                    g_A2SyncWait |= A2SyncInfoTable[aCpuId];
-                    wake_up(&A2SyncWaitQue);
-                    up(&A2SyncSem);
-
-                    /* Wait until all CPU sync wait flags are updated  */
-                    ret = wait_event_interruptible(A2SyncWaitQue, (A2SYNC_ALL == (g_A2SyncWait & A2SYNC_ALL)));
-                    if (ret != 0)
-                    {
-                        pr_err("wait_evnet error = %ld\n",ret);
-                        break;
-                    }
-
                     /* A2 Runtime Test Execution thread start request  */
                     complete(&g_A2StartSynCompletion);
                     complete(&g_A2StartSynCompletion);
-                    complete(&g_A2StartSynCompletion);
-                    complete(&g_A2StartSynCompletion);
+
+                    /* Wait until A2 Runtime Test completion notification is received from the A2 Runtime Test execution thread all CPUs  */
+                    ret = wait_for_completion_interruptible(&g_A2EndSynCompletion[0U]);
+                    ret |= wait_for_completion_interruptible(&g_A2EndSynCompletion[1U]);
+                    if (ret != 0)
+                    {
+                        pr_err(" CPU%d wait completion error = %ld\n",aCpuId, ret);
+                        break;
+                    }
+
+                    *aSmoniret = g_A2SmoniResult[aCpuId];
+
                 }
                 else
                 {
-                    /* Set a flag for synchronization with other CPUs */
-                    ret = down_interruptible(&A2SyncSem);
-                    if(ret != 0)
-                    {
-                        pr_err(" CPU%d A2SyncSem error = %ld\n",aCpuId, ret);
-                        break;
-                    }
-                    g_A2SyncWait |= A2SyncInfoTable[aCpuId];
-                    wake_up(&A2SyncWaitQue);
-                    up(&A2SyncSem);
+                    ret = -EINVAL;
                 }
-                /* Wait until A2 Runtime Test completion notification is received from the A2 Runtime Test execution thread corresponding to CpuId  */
-                ret = wait_for_completion_interruptible(&g_A2EndSynCompletion[aCpuId]);
-                if (ret != 0)
-                {
-                    pr_err(" CPU%d wait completion error = %ld\n",aCpuId, ret);
-                    break;
-                }
-
-                *aSmoniret = g_A2SmoniResult[aCpuId]; 
-
-                ret = down_interruptible(&A2SyncSem);
-                if(ret != 0)
-                {
-                    pr_err(" CPU%d A2SyncSem error = %ld\n",aCpuId, ret);
-                    break;
-                }
-                g_A2SyncWait &= ~A2SyncInfoTable[aCpuId];
-                up(&A2SyncSem);
            }
            break;
 
@@ -1396,8 +1246,6 @@ static int CpurttDrv_init(void)
     }
 
     init_completion(&g_A2StartSynCompletion);
-    sema_init(&A2SyncSem, 1);
-    init_waitqueue_head(&A2SyncWaitQue);
     sema_init(&CallbackSem, 0);
 
     for(cnt=0;cnt<DRV_CPURTTKER_CPUNUM_MAX;cnt++)

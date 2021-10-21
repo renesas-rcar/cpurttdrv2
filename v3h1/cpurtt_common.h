@@ -10,6 +10,7 @@
  * HISTORY       : 
  *                 2021.08.26 Create New File for SoC
  *                 2021.10.19 Delete unused definition value.
+ *                            Move definition values that do not need to be shared with the user layer.
  */
 /****************************************************************************/
 /*
@@ -109,8 +110,6 @@ typedef struct {
 #define DRV_CPURTT_IOCTL_WAIT_CALLBACK  _IOWR( DRV_CPURTT_IOCTL_MAGIC, DRV_CPURTT_CMD_CODE + 5 , drvCPURTT_CallbackInfo_t)  /* ioctl command for drvCPURTT_UDF_WaitCallback */
 
 /* Definition of the kernel CPURTT device module name */
-#define UDF_CPURTT_DRIVER_NAME        "cpurttdrv"     /* cpurtt driver name */
-#define UDF_CPURTT_CLASS_NAME         "cpurttmod"     /* cpurtt driver class name */
 #define UDF_CPURTT_MODULE_NAME        "cpurttmod0"    /* cpurtt driver minor number */
 
 /* Definition for callback control information */

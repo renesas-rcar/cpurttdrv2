@@ -11,6 +11,7 @@
  *                 2021.08.26 Create New File for SoC
  *                 2021.09.30 Added support for the IMS3 hierarchy.
  *                 2021.10.19 Modify the definition value used in A2 Runtime Test.
+ *                            Move definition values that do not need to be shared with the user layer.
  */
 /****************************************************************************/
 /*
@@ -135,6 +136,10 @@
 /* Data definition value to be set in the argument of R_SMONI_API_RuntimeTestA2Execute other than CPU0 */
 #define DRV_RTTKER_A2_PARAM_SGI_DATA    0xFFFFFFFFU
 #define DRV_RTTKER_A2_PARAM_RTTEX_DATA  0x00000000U
+
+/* Definition of the kernel CPURTT device module name */
+#define UDF_CPURTT_DRIVER_NAME        "cpurttdrv"     /* cpurtt driver name */
+#define UDF_CPURTT_CLASS_NAME         "cpurttmod"     /* cpurtt driver class name */
 
 /* Structure of RTTFINISH1 */
 typedef union

@@ -3,7 +3,7 @@
  * FILE          : cpurttdrv.c
  * DESCRIPTION   : CPU Runtime Test driver for sample code
  * CREATED       : 2021.04.20
- * MODIFIED      : 2021.10.19
+ * MODIFIED      : 2021.11.22
  * AUTHOR        : Renesas Electronics Corporation
  * TARGET DEVICE : R-Car V3Hv2
  * TARGET OS     : BareMetal
@@ -12,6 +12,7 @@
  *                 2021.07.15 Modify prefix of smoni api.
  *                 2021.10.19 Modify the storage method of fail information in FbistInterruptHandler.
  *                            Modify the execution method of A2 Runtime Test.
+ *                 2021.11.22 Update software version.
  */
 /****************************************************************************/
 /*
@@ -60,7 +61,7 @@
 
 #undef IS_INTERRUPT
 
-#define DRIVER_VERSION "0.3.0"
+#define DRIVER_VERSION "1.0.0"
 
 /***********************************************************
  Macro definitions

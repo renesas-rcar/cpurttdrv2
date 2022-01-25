@@ -3,7 +3,7 @@
  * FILE          : cpurttdrv.c
  * DESCRIPTION   : CPU Runtime Test driver for sample code
  * CREATED       : 2021.04.20
- * MODIFIED      : 2021.11.22
+ * MODIFIED      : 2022.01.24
  * AUTHOR        : Renesas Electronics Corporation
  * TARGET DEVICE : R-Car V3Hv2
  * TARGET OS     : BareMetal
@@ -13,10 +13,11 @@
  *                 2021.10.19 Modify the storage method of fail information in FbistInterruptHandler.
  *                            Modify the execution method of A2 Runtime Test.
  *                 2021.11.22 Update software version.
+ *                 2022.01.24 Add ioctl command for HWA Runtime Test.
  */
 /****************************************************************************/
 /*
- * Copyright(C) 2021 Renesas Electronics Corporation. All Rights Reserved.
+ * Copyright(C) 2021-2022 Renesas Electronics Corporation. All Rights Reserved.
  * RENESAS ELECTRONICS CONFIDENTIAL AND PROPRIETARY
  * This program must be used solely for the purpose for which
  * it was furnished by Renesas Electronics Corporation.
@@ -61,7 +62,7 @@
 
 #undef IS_INTERRUPT
 
-#define DRIVER_VERSION "1.0.0"
+#define DRIVER_VERSION "1.0.1"
 
 /***********************************************************
  Macro definitions
@@ -189,6 +190,7 @@ static long drvCPURTT_UDF_SmoniApiExe(drvCPURTT_SmoniTable_t index, uint32_t aCp
 static long drvCPURTT_UDF_FbistInit(void);
 static long drvCPURTT_UDF_FbistDeInit(void);
 static long drvCPURTT_UDF_WaitCbNotice(drvCPURTT_CallbackInfo_t *aParam);
+static long drvCPURTT_UDF_HWAExecute(uint32_t aHierarchy, uint32_t aRttex);
 
 static int fbc_uio_share_clk_enable(struct fbc_uio_share_platform_data *pdata)
 {
@@ -1302,6 +1304,60 @@ static long drvCPURTT_UDF_WaitCbNotice(drvCPURTT_CallbackInfo_t *aParam)
     return ret;
 }
 
+static long drvCPURTT_UDF_HWAExecute(uint32_t aHierarchy, uint32_t aRttex)
+{
+    long      ret = 0;
+    struct platform_device *pdev = g_cpurtt_pdev;
+    struct fbc_uio_share_platform_data *priv = platform_get_drvdata(pdev);
+    struct uio_info *uio_info = priv->uio_info;
+    unsigned long flags;
+    unsigned int reg_read_data;
+
+    /* check hierarhcy */
+    if ( ( (aHierarchy>=(uint32_t)DRV_RTTKER_HIERARCHY_IMR0) && (aHierarchy<=(uint32_t)DRV_RTTKER_HIERARCHY_SLIM) ) ||
+         ( (aHierarchy>=(uint32_t)DRV_RTTKER_HIERARCHY_DISP) && (aHierarchy<(uint32_t)DRV_RTTKER_HIERARCHY_MAX ) )  )
+    {
+        /* Set interrupt disabled so that the field BIST finish interrupt does not occur immediately after writing the RTTEX register.  */
+        /* Check in advance if there is a process that disables interrupts before setting. */
+        spin_lock(&priv->lock);
+        if (!__test_and_set_bit(UIO_IRQ_DISABLED, &priv->flags))
+        {
+            disable_irq((unsigned int)uio_info->irq);
+        }
+        spin_unlock(&priv->lock);
+
+        /* write RTTEX register for execute runtime test */
+        writel(aRttex, g_RegBaseAddrTable[aHierarchy]);
+        /* bus check RTTEX register */
+        reg_read_data = readl(g_RegBaseAddrTable[aHierarchy]);
+        if (aRttex != reg_read_data)
+        {
+            /* If the write result and the read result do not match, a check error is returned. */
+            pr_err("rttex(%d) buscheck error read_data = %08x excepted_date = %08x\n", aHierarchy, reg_read_data, aRttex);
+            ret = FBIST_BUSCHECK_ERROR;
+        }
+        else
+        {
+            ret = 0;
+        }
+
+        /* If there is no other process that disables interrupts, set interrupt enable. */
+        spin_lock_irqsave(&priv->lock, flags);
+        if (__test_and_clear_bit(UIO_IRQ_DISABLED, &priv->flags))
+        {
+            enable_irq((unsigned int)uio_info->irq);
+        }
+        spin_unlock_irqrestore(&priv->lock, flags);
+    }
+    else
+    {
+        ret = -EINVAL;
+        pr_err("hierarchy number =%d fail\n", aHierarchy);
+    }
+
+    return ret;
+}
+
 /* This function executes the purttmod open system call.  */
 static int CpurttDrv_open(struct inode *inode, struct file *file)
 {
@@ -1320,6 +1376,7 @@ static long CpurttDrv_ioctl( struct file* filp, unsigned int cmd, unsigned long 
     long ret;
     drvCPURTT_CallbackInfo_t CbInfo;
     drvCPURTT_SmoniParam_t smoni_param;
+    drvCPURTT_HwaParam_t hwa_param;
 
     /* Executes the process corresponding to the command specified in the argument "cmd" passed by ioctl execution from the user layer. */
     switch (cmd) {
@@ -1378,6 +1435,19 @@ static long CpurttDrv_ioctl( struct file* filp, unsigned int cmd, unsigned long 
                {
                    ret = -EFAULT;
                }
+            }
+            break;
+
+        case DRV_CPURTT_IOCTL_HWAEXE:
+            /* Copy hwa execute arguments to kernel memory. */
+            ret = copy_from_user(&hwa_param, (void __user *)arg, sizeof(drvCPURTT_HwaParam_t));
+            if (ret != 0) {
+               ret = -EFAULT;
+            }
+
+            if (ret == 0)
+            {
+                ret = drvCPURTT_UDF_HWAExecute(hwa_param.Hierarchy, hwa_param.Rttex);
             }
             break;
 

@@ -3,7 +3,7 @@
  * FILE          : cpurtt_common.h
  * DESCRIPTION   : CPU Runtime Test driver
  * CREATED       : 2021.08.26
- * MODIFIED      : 2021.10.19
+ * MODIFIED      : 2022.01.24
  * AUTHOR        : Renesas Electronics Corporation
  * TARGET DEVICE : R-Car V3Hv1.1
  * TARGET OS     : BareMetal
@@ -11,10 +11,11 @@
  *                 2021.08.26 Create New File for SoC
  *                 2021.10.19 Delete unused definition value.
  *                            Move definition values that do not need to be shared with the user layer.
+ *                 2022.01.24 Added definition value for HWA Runtime Test.
  */
 /****************************************************************************/
 /*
- * Copyright(C) 2021 Renesas Electronics Corporation. All Rights Reserved.
+ * Copyright(C) 2021-2022 Renesas Electronics Corporation. All Rights Reserved.
  * RENESAS ELECTRONICS CONFIDENTIAL AND PROPRIETARY
  * This program must be used solely for the purpose for which
  * it was furnished by Renesas Electronics Corporation.
@@ -98,6 +99,11 @@ typedef struct {
     uint32_t RfsoOutputPinRequest;
 } drvCPURTT_CallbackInfo_t;
 
+typedef struct {
+    uint32_t Hierarchy;
+    uint32_t Rttex;
+} drvCPURTT_HwaParam_t;
+
 /* Command definition for ioctl */
 #define DRV_CPURTT_IOCTL_MAGIC  (0x9AU)
 #define DRV_CPURTT_CMD_CODE     (0x1000U)
@@ -108,6 +114,7 @@ typedef struct {
 #define DRV_CPURTT_IOCTL_DEVFBISTINIT    _IO( DRV_CPURTT_IOCTL_MAGIC, DRV_CPURTT_CMD_CODE + 3 )                             /* ioctl command for drvCPURTT_UDF_FbistInitialize */
 #define DRV_CPURTT_IOCTL_DEVFBISTDEINIT  _IO( DRV_CPURTT_IOCTL_MAGIC, DRV_CPURTT_CMD_CODE + 4 )                             /* ioctl command for drvCPURTT_UDF_FbistDeInitialize */
 #define DRV_CPURTT_IOCTL_WAIT_CALLBACK  _IOWR( DRV_CPURTT_IOCTL_MAGIC, DRV_CPURTT_CMD_CODE + 5 , drvCPURTT_CallbackInfo_t)  /* ioctl command for drvCPURTT_UDF_WaitCallback */
+#define DRV_CPURTT_IOCTL_HWAEXE     _IOWR( DRV_CPURTT_IOCTL_MAGIC, DRV_CPURTT_CMD_CODE + 6 , drvCPURTT_HwaParam_t)   /* ioctl command for drvCPURTT_UDF_HwaExecute */
 
 /* Definition of the kernel CPURTT device module name */
 #define UDF_CPURTT_MODULE_NAME        "cpurttmod0"    /* cpurtt driver minor number */
